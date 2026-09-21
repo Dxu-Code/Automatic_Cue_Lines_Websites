@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cue — learn your lines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --stage: #17150F;
+    --stage-raised: #211E16;
+    --paper: #E7DEC7;
+    --paper-line: #D7CBA9;
+    --ink: #2A2620;
+    --ink-muted: #7A7160;
+    --pencil: #9C3B2E;
+    --pencil-soft: #EFD3C9;
+    --gold: #C9A227;
+    --gold-soft: #3A331B;
+    --rule: #3A3527;
+    --white: #F7F3E9;
+  }
+  :root:not([data-theme="light"]) { /* app keeps one deliberate stage identity regardless of viewer preference */ }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --stage: #17150F; --stage-raised: #211E16; --paper: #E7DEC7; --paper-line: #D7CBA9;
+      --ink: #2A2620; --ink-muted: #7A7160; --pencil: #9C3B2E; --pencil-soft: #EFD3C9;
+      --gold: #C9A227; --gold-soft: #3A331B; --rule: #3A3527; --white: #F7F3E9;
+    }
+  }
+  :root[data-theme="dark"] {
+    --stage: #17150F; --stage-raised: #211E16; --paper: #E7DEC7; --paper-line: #D7CBA9;
+    --ink: #2A2620; --ink-muted: #7A7160; --pencil: #9C3B2E; --pencil-soft: #EFD3C9;
+    --gold: #C9A227; --gold-soft: #3A331B; --rule: #3A3527; --white: #F7F3E9;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--stage);
+    color: var(--white);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  button, input, textarea { font-family: inherit; }
+  button:focus-visible, [tabindex]:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .shell {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+  }
+  .brand h1 {
+    font-size: 1.6rem;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .brand p {
+    margin: 0.15rem 0 0;
+    color: #B9AF98;
+    font-size: 0.92rem;
+  }
+
+  .tabs {
+    display: inline-flex;
+    gap: 0.25rem;
+    background: var(--stage-raised);
+    border-radius: 999px;
+    padding: 0.25rem;
+  }
+  .tabs button {
+    border: none;
+    background: transparent;
+    color: #C9BFA8;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tabs button.active {
+    background: var(--gold);
+    color: #221D0F;
+  }
+  .tabs button:not(.active):hover { color: var(--white); }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.1rem;
+  }
+  .btn {
+    border: 1px solid var(--rule);
+    background: var(--stage-raised);
+    color: var(--white);
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn:hover { border-color: var(--gold); }
+  .btn.primary { background: var(--gold); color: #221D0F; border-color: var(--gold); }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn.quiet { background: transparent; }
+  .toolbar .count {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: #B9AF98;
+  }
+  input[type="file"] { display: none; }
+
+  .highlight-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--stage-raised);
+  }
+  .highlight-controls label {
+    font-size: 0.82rem;
+    color: #C9BFA8;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+  }
+  .highlight-controls input[type="checkbox"] { accent-color: var(--gold); }
+  .highlight-controls input[type="color"] {
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    background: none;
+    cursor: pointer;
+  }
+
+  .bracket-content { font-weight: 700; }
+
+
+  /* Script paper panel */
+  .paper {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 3px;
+    padding: 1.4rem 1.2rem;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+  }
+  .paper textarea {
+    width: 100%;
+    min-height: 420px;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    font-family: 'Courier Prime', 'Courier New', monospace;
+    font-size: 1rem;
+    line-height: 1.7;
+    resize: vertical;
+  }
+  .paper textarea:focus { outline: none; }
+
+  .starter-panel {
+    background: var(--stage-raised);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .starter-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #B9AF98;
+    margin-bottom: 0.55rem;
+  }
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+  .chip {
+    border: 1px solid var(--rule);
+    background: var(--stage);
+    color: var(--white);
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--gold); }
+  .chip.active { background: var(--gold); color: #221D0F; border-color: var(--gold); font-weight: 600; }
+  .custom-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.7rem;
+    flex-wrap: wrap;
+  }
+  .starter-input {
+    flex: 1 1 180px;
+    background: var(--stage);
+    border: 1px solid var(--rule);
+    color: var(--white);
+    border-radius: 8px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.85rem;
+  }
+  .starter-input::placeholder { color: #746A55; }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--ink-muted);
+  }
+  .empty-state h2 { margin: 0 0 0.4rem; font-size: 1.15rem; color: var(--ink); }
+  .empty-state p { margin: 0 0 1.2rem; font-size: 0.92rem; }
+
+  .lines {
+    display: flex;
+    flex-direction: column;
+  }
+  .line-row {
+    display: flex;
+    gap: 0.9rem;
+    align-items: baseline;
+    padding: 0.18rem 0.4rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .line-row:hover { background: rgba(42,38,32,0.06); }
+  .line-row .num {
+    flex: 0 0 2.1rem;
+    text-align: right;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    user-select: none;
+  }
+  .line-row .txt {
+    flex: 1 1 auto;
+    font-family: 'Courier Prime', 'Courier New', monospace;
+    font-size: 0.98rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .line-row.is-blank { cursor: default; }
+  .line-row.is-blank:hover { background: none; }
+  .line-row.is-target {
+    background: var(--pencil-soft);
+  }
+  .line-row.is-target .num { color: var(--pencil); font-weight: 700; }
+  .line-row.is-target .txt { color: var(--pencil); font-weight: 700; }
+
+  .cue-block {
+    margin: 0.2rem 0.4rem 0.1rem 2.9rem;
+    padding: 0.5rem 0.7rem;
+    border-left: 2px solid var(--pencil);
+    background: rgba(156,59,46,0.06);
+    border-radius: 0 4px 4px 0;
+  }
+  .cue-block .cue-label {
+    font-size: 0.72rem;
+    color: var(--pencil);
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+  .cue-block .cue-line {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.88rem;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+
+  /* Rehearse view */
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .card {
+    background: var(--stage-raised);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .card .cue-label {
+    font-size: 0.75rem;
+    color: var(--gold);
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+  .card .cue-line {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.92rem;
+    color: #CFC6AE;
+    line-height: 1.55;
+  }
+  .card .divider {
+    height: 1px;
+    background: var(--rule);
+    margin: 0.75rem 0 0.7rem;
+  }
+  .your-line-label {
+    font-size: 0.75rem;
+    color: #B9AF98;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+  .target-text {
+    font-family: 'Courier Prime', monospace;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--white);
+  }
+  .target-hidden {
+    filter: blur(7px);
+    user-select: none;
+  }
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.7rem;
+    flex-wrap: wrap;
+  }
+  .icon-btn {
+    background: transparent;
+    border: none;
+    color: #8B8168;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.3rem;
+  }
+  .icon-btn:hover { color: var(--gold); }
+  .card.is-mastered { border-color: var(--gold); }
+  .card.is-mastered .your-line-label::after {
+    content: " · learned";
+    color: var(--gold);
+    font-weight: 400;
+  }
+
+  footer.note {
+    margin-top: 2rem;
+    font-size: 0.8rem;
+    color: #6E6552;
+    text-align: center;
+  }
+
+  @media (max-width: 560px) {
+    .shell { padding: 1.4rem 0.9rem 3rem; }
+    header.top { flex-direction: column; align-items: flex-start; }
+    .cue-block { margin-left: 0.4rem; }
+    .line-row .num { flex-basis: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <h1>Cue</h1>
+      <p>Mark the lines you need to learn — the two before it come along as your cue.</p>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-mode="script" class="active">Script</button>
+      <button data-mode="rehearse">Rehearse</button>
+    </nav>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn" id="uploadBtn">Upload .txt</button>
+    <input type="file" id="fileInput" accept=".txt,text/plain">
+    <button class="btn" id="editBtn">Edit text</button>
+    <button class="btn quiet" id="clearBtn">Clear script</button>
+    <div class="highlight-controls">
+      <label><input type="checkbox" id="highlightToggle"> Highlight selected line outside ( )</label>
+      <input type="color" id="highlightColor" title="Highlight color">
+    </div>
+    <span class="count" id="countLabel"></span>
+  </div>
+
+  <main id="view"></main>
+
+  <footer class="note">Your script and marked lines stay in this browser only.</footer>
+</div>
+
+<script>
+(function () {
+  var STORAGE_KEY = 'cue-app-state-v1';
+
+  var state = {
+    rawText: '',
+    selected: [],   // line indices marked to learn
+    mastered: [],   // subset of selected, marked learned
+    revealed: [],   // rehearse-mode reveal toggles
+    mode: 'script',
+    editing: false,
+    highlightEnabled: true,
+    highlightColor: '#E8C468'
+  };
+
+  function loadState() {
+    try {
+      var saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        state.rawText = parsed.rawText || '';
+        state.selected = parsed.selected || [];
+        state.mastered = parsed.mastered || [];
+        state.highlightEnabled = parsed.highlightEnabled !== false;
+        state.highlightColor = parsed.highlightColor || '#E8C468';
+      }
+    } catch (e) { /* storage unavailable — start fresh */ }
+  }
+
+  function persist() {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        rawText: state.rawText,
+        selected: state.selected,
+        mastered: state.mastered,
+        highlightEnabled: state.highlightEnabled,
+        highlightColor: state.highlightColor
+      }));
+    } catch (e) { /* ignore */ }
+  }
+
+  function getLines() {
+    if (!state.rawText) return [];
+    return state.rawText.replace(/\r\n/g, '\n').split('\n');
+  }
+
+  function isBlank(s) { return !s || !s.trim(); }
+
+  function hexToRgba(hex, alpha) {
+    var h = hex.replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    var r = parseInt(h.substring(0, 2), 16);
+    var g = parseInt(h.substring(2, 4), 16);
+    var b = parseInt(h.substring(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+  }
+
+  // Splits line text on ( ) or [ ] groups. Text outside brackets gets the
+  // highlight background only when this is the selected/target line and
+  // highlighting is on; text inside brackets — the part meant to be
+  // memorized — is always left plain, just bolded.
+  function renderLineSegments(text, isTarget) {
+    var frag = document.createDocumentFragment();
+    if (!text) { frag.appendChild(document.createTextNode('\u00A0')); return frag; }
+    var regex = /\([^)]*\)|\[[^\]]*\]/g;
+    var lastIndex = 0;
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) appendOutside(text.slice(lastIndex, match.index));
+      var b = document.createElement('span');
+      b.className = 'bracket-content';
+      b.textContent = match[0];
+      frag.appendChild(b);
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) appendOutside(text.slice(lastIndex));
+    return frag;
+
+    function appendOutside(str) {
+      if (!str) return;
+      if (isTarget && state.highlightEnabled) {
+        var span = document.createElement('span');
+        span.textContent = str;
+        span.style.backgroundColor = hexToRgba(state.highlightColor, 0.55);
+        span.style.borderRadius = '3px';
+        frag.appendChild(span);
+      } else {
+        frag.appendChild(document.createTextNode(str));
+      }
+    }
+  }
+
+  function getCueLines(lines, index) {
+    var out = [];
+    var i = index - 1;
+    while (i >= 0 && out.length < 2) {
+      if (!isBlank(lines[i])) out.unshift({ index: i, text: lines[i] });
+      i--;
+    }
+    return out;
+  }
+
+
+  function getStarterGroups(lines) {
+    var map = {};
+    var order = [];
+    lines.forEach(function (text, i) {
+      if (isBlank(text)) return;
+      var m = text.match(/^\s*([^:\n]{1,40}):/);
+      if (!m) return;
+      var label = m[1].trim();
+      if (!label) return;
+      var key = label.toLowerCase();
+      if (!map[key]) { map[key] = { label: label, indices: [] }; order.push(key); }
+      map[key].indices.push(i);
+    });
+    return order.map(function (k) { return map[k]; }).sort(function (a, b) {
+      return b.indices.length - a.indices.length || a.label.localeCompare(b.label);
+    });
+  }
+
+  function selectGroup(indices) {
+    var allSelected = indices.every(function (i) { return state.selected.indexOf(i) !== -1; });
+    if (allSelected) {
+      state.selected = state.selected.filter(function (i) { return indices.indexOf(i) === -1; });
+      state.mastered = state.mastered.filter(function (i) { return indices.indexOf(i) === -1; });
+    } else {
+      indices.forEach(function (i) { if (state.selected.indexOf(i) === -1) state.selected.push(i); });
+      state.selected.sort(function (a, b) { return a - b; });
+    }
+    persist();
+    render();
+  }
+
+  function toggleSelected(index) {
+    var pos = state.selected.indexOf(index);
+    if (pos === -1) {
+      state.selected.push(index);
+      state.selected.sort(function (a, b) { return a - b; });
+    } else {
+      state.selected.splice(pos, 1);
+      var mp = state.mastered.indexOf(index);
+      if (mp !== -1) state.mastered.splice(mp, 1);
+    }
+    persist();
+    render();
+  }
+
+  function toggleMastered(index) {
+    var mp = state.mastered.indexOf(index);
+    if (mp === -1) state.mastered.push(index); else state.mastered.splice(mp, 1);
+    persist();
+    render();
+  }
+
+  function toggleRevealed(index) {
+    var rp = state.revealed.indexOf(index);
+    if (rp === -1) state.revealed.push(index); else state.revealed.splice(rp, 1);
+    render();
+  }
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    attrs = attrs || {};
+    Object.keys(attrs).forEach(function (k) {
+      if (k === 'class') node.className = attrs[k];
+      else if (k === 'text') node.textContent = attrs[k];
+      else if (k.indexOf('on') === 0) node.addEventListener(k.slice(2), attrs[k]);
+      else node.setAttribute(k, attrs[k]);
+    });
+    (children || []).forEach(function (c) { if (c) node.appendChild(c); });
+    return node;
+  }
+
+  function renderScriptView(container) {
+    var lines = getLines();
+
+    if (state.editing) {
+      var paper = el('div', { class: 'paper' });
+      var ta = el('textarea', {
+        placeholder: 'Paste or type your script here, one line per character cue…',
+        oninput: function (e) { state.rawText = e.target.value; }
+      });
+      ta.value = state.rawText;
+      ta.addEventListener('blur', function () { persist(); render(); });
+      paper.appendChild(ta);
+      container.appendChild(paper);
+      return;
+    }
+
+    if (!lines.length || !state.rawText.trim()) {
+      var paper2 = el('div', { class: 'paper' });
+      paper2.appendChild(el('div', { class: 'empty-state' }, [
+        el('h2', { text: 'No script yet' }),
+        el('p', { text: 'Upload a .txt file or write your lines directly to get started.' }),
+        el('button', { class: 'btn primary', text: 'Start typing', onclick: function () {
+          state.editing = true; render();
+        } })
+      ]));
+      container.appendChild(paper2);
+      return;
+    }
+
+    var groups = getStarterGroups(lines);
+    var panel = el('div', { class: 'starter-panel' });
+    panel.appendChild(el('div', { class: 'starter-title', text: 'Quick select by starter' }));
+
+    if (groups.length) {
+      var chipRow = el('div', { class: 'chip-row' });
+      groups.forEach(function (g) {
+        var allSel = g.indices.every(function (i) { return state.selected.indexOf(i) !== -1; });
+        chipRow.appendChild(el('button', {
+          class: 'chip' + (allSel ? ' active' : ''),
+          text: g.label + ' (' + g.indices.length + ')',
+          onclick: function () { selectGroup(g.indices); }
+        }));
+      });
+      panel.appendChild(chipRow);
+    }
+
+    var customRow = el('div', { class: 'custom-row' });
+    var input = el('input', { type: 'text', class: 'starter-input', placeholder: 'Or type any starter, e.g. JOHN' });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') applyBtn.click(); });
+    var applyBtn = el('button', {
+      class: 'btn quiet', text: 'Select matches', onclick: function () {
+        var val = input.value.trim().toLowerCase();
+        if (!val) return;
+        var matchIndices = [];
+        lines.forEach(function (text, i) {
+          if (!isBlank(text) && text.trim().toLowerCase().indexOf(val) === 0) matchIndices.push(i);
+        });
+        if (matchIndices.length) selectGroup(matchIndices);
+      }
+    });
+    customRow.appendChild(input);
+    customRow.appendChild(applyBtn);
+    panel.appendChild(customRow);
+
+    container.appendChild(panel);
+
+    var paper3 = el('div', { class: 'paper' });
+    var wrap = el('div', { class: 'lines' });
+
+    lines.forEach(function (text, i) {
+      var blank = isBlank(text);
+      var targeted = state.selected.indexOf(i) !== -1;
+
+      if (targeted) {
+        var cue = getCueLines(lines, i);
+        var block = el('div', { class: 'cue-block' });
+        block.appendChild(el('div', { class: 'cue-label', text: cue.length ? 'Cue' : 'This is the first line' }));
+        cue.forEach(function (c) {
+          var cl = el('div', { class: 'cue-line' });
+          cl.appendChild(renderLineSegments(c.text, false));
+          block.appendChild(cl);
+        });
+        wrap.appendChild(block);
+      }
+
+      var txtSpan = el('span', { class: 'txt' });
+      txtSpan.appendChild(renderLineSegments(text, targeted));
+      var row = el('div', {
+        class: 'line-row' + (blank ? ' is-blank' : '') + (targeted ? ' is-target' : ''),
+        onclick: blank ? null : function () { toggleSelected(i); }
+      }, [
+        el('span', { class: 'num', text: blank ? '' : String(i + 1) }),
+        txtSpan
+      ]);
+      wrap.appendChild(row);
+    });
+
+    paper3.appendChild(wrap);
+    container.appendChild(paper3);
+  }
+
+  function renderRehearseView(container) {
+    var lines = getLines();
+    if (!state.selected.length) {
+      var paper = el('div', { class: 'paper' });
+      paper.appendChild(el('div', { class: 'empty-state' }, [
+        el('h2', { text: 'Nothing to rehearse yet' }),
+        el('p', { text: 'Go to Script and click a line to add it here with its cue.' }),
+        el('button', { class: 'btn primary', text: 'Go to Script', onclick: function () {
+          state.mode = 'script'; render();
+        } })
+      ]));
+      container.appendChild(paper);
+      return;
+    }
+
+    var cards = el('div', { class: 'cards' });
+    state.selected.forEach(function (i) {
+      var cue = getCueLines(lines, i);
+      var isRevealed = state.revealed.indexOf(i) !== -1;
+      var isMastered = state.mastered.indexOf(i) !== -1;
+
+      var card = el('div', { class: 'card' + (isMastered ? ' is-mastered' : '') });
+
+      var top = el('div', { class: 'card-top' });
+      var cueCol = el('div', {}, [
+        el('div', { class: 'cue-label', text: cue.length ? 'Cue' : 'First line' })
+      ]);
+      cue.forEach(function (c) {
+        var cl = el('div', { class: 'cue-line' });
+        cl.appendChild(renderLineSegments(c.text, false));
+        cueCol.appendChild(cl);
+      });
+      top.appendChild(cueCol);
+      top.appendChild(el('button', { class: 'icon-btn', text: 'Remove', onclick: function () { toggleSelected(i); } }));
+      card.appendChild(top);
+
+      card.appendChild(el('div', { class: 'divider' }));
+      card.appendChild(el('div', { class: 'your-line-label', text: 'Your line' }));
+      var targetDiv = el('div', { class: 'target-text' + (isRevealed ? '' : ' target-hidden') });
+      targetDiv.appendChild(renderLineSegments(lines[i], true));
+      card.appendChild(targetDiv);
+
+      var actions = el('div', { class: 'card-actions' }, [
+        el('button', {
+          class: 'btn quiet',
+          text: isRevealed ? 'Hide line' : 'Reveal line',
+          onclick: function () { toggleRevealed(i); }
+        }),
+        el('button', {
+          class: 'btn quiet',
+          text: isMastered ? 'Mark as still learning' : 'Mark as learned',
+          onclick: function () { toggleMastered(i); }
+        })
+      ]);
+      card.appendChild(actions);
+
+      cards.appendChild(card);
+    });
+
+    container.appendChild(cards);
+  }
+
+  function render() {
+    document.querySelectorAll('#tabs button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.mode === state.mode);
+    });
+    document.getElementById('editBtn').textContent = state.editing ? 'Done editing' : 'Edit text';
+    document.getElementById('editBtn').style.display = state.mode === 'script' ? '' : 'none';
+    document.getElementById('uploadBtn').style.display = state.mode === 'script' ? '' : 'none';
+    document.getElementById('clearBtn').style.display = state.mode === 'script' ? '' : 'none';
+    document.getElementById('highlightToggle').checked = state.highlightEnabled;
+    document.getElementById('highlightColor').value = state.highlightColor;
+
+    var count = state.selected.length;
+    var mastered = state.mastered.length;
+    document.getElementById('countLabel').textContent = count
+      ? (count + ' line' + (count === 1 ? '' : 's') + ' to learn' + (mastered ? ' · ' + mastered + ' learned' : ''))
+      : '';
+
+    var view = document.getElementById('view');
+    view.innerHTML = '';
+    if (state.mode === 'script') renderScriptView(view);
+    else renderRehearseView(view);
+  }
+
+  // Wire up static controls
+  document.querySelectorAll('#tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.mode = b.dataset.mode;
+      state.editing = false;
+      render();
+    });
+  });
+
+  document.getElementById('uploadBtn').addEventListener('click', function () {
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('fileInput').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      state.rawText = String(ev.target.result || '');
+      state.editing = false;
+      persist();
+      render();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  document.getElementById('editBtn').addEventListener('click', function () {
+    state.editing = !state.editing;
+    render();
+  });
+
+  document.getElementById('highlightToggle').addEventListener('change', function (e) {
+    state.highlightEnabled = e.target.checked;
+    persist();
+    render();
+  });
+  document.getElementById('highlightColor').addEventListener('input', function (e) {
+    state.highlightColor = e.target.value;
+    persist();
+    render();
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', function () {
+    if (!state.rawText.trim() || window.confirm('Clear the script and all marked lines?')) {
+      state.rawText = '';
+      state.selected = [];
+      state.mastered = [];
+      state.revealed = [];
+      state.editing = false;
+      persist();
+      render();
+    }
+  });
+
+  loadState();
+  render();
+})();
+</script>
+</body>
+</html>
